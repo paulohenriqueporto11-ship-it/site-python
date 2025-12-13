@@ -120,21 +120,21 @@ def processar_ia():
     resposta = ""
     
     # Se o usuário pede para criar/fazer/gerar
-    if any(x in texto for in ["criar", "fazer", "gerar", "crie", "me da", "quero"]):
+    if any(x in texto for x in ["criar", "fazer", "gerar", "crie", "me da", "quero"]):
         if linguagem != "indefinido":
             resposta = departamento_criar(linguagem, texto)
         else:
             resposta = "Entendi que você quer criar algo, mas em qual linguagem? (HTML, PHP, JS...)"
 
     # Se o usuário pede explicação
-    elif any(x in texto for in ["oque", "o que", "explica", "como funciona", "significa"]):
+    elif any(x in texto for x in ["oque", "o que", "explica", "como funciona", "significa"]):
         if linguagem != "indefinido":
             resposta = departamento_explicar(linguagem, texto)
         else:
             resposta = "Posso explicar, mas sobre qual linguagem? (Ex: 'O que é div em HTML?')"
 
     # Se o usuário pede correção ou manda código com erro
-    elif any(x in texto for in ["corrigir", "erro", "bug", "analisa", "ve se ta certo"]):
+    elif any(x in texto for x in ["corrigir", "erro", "bug", "analisa", "ve se ta certo"]):
         if linguagem != "indefinido":
             resposta = departamento_corrigir(linguagem, texto)
         else:
