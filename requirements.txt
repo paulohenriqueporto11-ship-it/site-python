@@ -1,2 +1,5 @@
 flask
+
+gunicornflask
 gunicorn
+flask-cors
