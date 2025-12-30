@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Rede Social</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { width: 100%; max-width: 500px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        h2 { margin-top: 0; color: #333; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
+        .btn-primary { background-color: #0095f6; color: white; }
+        .btn-primary:hover { background-color: #0077c5; }
+        .btn-secondary { background-color: #e4e6eb; color: #050505; margin-top: 10px; }
+        .post { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: left; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .post-author { font-weight: bold; color: #333; font-size: 0.9em; }
+        .post-text { margin-top: 5px; color: #1c1e21; line-height: 1.4; }
+        .post-date { font-size: 0.7em; color: #888; margin-top: 8px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="login-view" class="card">
+        <h2>Bem-vindo</h2>
+        <p>Faça login para participar</p>
+        <button class="btn-primary" onclick="fazerLogin()">Entrar com Google</button>
+    </div>
+
+    <div id="app-view" class="hidden">
+        <div class="card">
+            <h3 id="user-display"></h3>
+            <input type="text" id="msg-input" placeholder="No que você está pensando?">
+            <button class="btn-primary" onclick="enviarPost()">Publicar</button>
+            <button class="btn-secondary" onclick="sair()">Sair</button>
+        </div>
+        <div id="feed">
+            </div>
+    </div>
+</div>
+
+<script type="module">
+    // Importando Firebase via CDN (Web)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // --- SUA CONFIGURAÇÃO ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAzt6zthvaSDzTtOyXPpZWyISbrjJHW0F4",
+      authDomain: "rede-7a165.firebaseapp.com",
+      databaseURL: "https://rede-7a165-default-rtdb.firebaseio.com",
+      projectId: "rede-7a165",
+      storageBucket: "rede-7a165.firebasestorage.app",
+      messagingSenderId: "494474225340",
+      appId: "1:494474225340:web:f197ec65a0095c772752b9"
+    };
+    // -------------------------
+
+    // Inicializando
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    // Elementos da tela
+    const loginView = document.getElementById('login-view');
+    const appView = document.getElementById('app-view');
+    const userDisplay = document.getElementById('user-display');
+    const feed = document.getElementById('feed');
+    const inputMsg = document.getElementById('msg-input');
+
+    // Funções Globais
+    window.fazerLogin = () => signInWithPopup(auth, provider).catch((error) => console.error("Erro login:", error));
+    window.sair = () => signOut(auth);
+
+    window.enviarPost = async () => {
+        if(!inputMsg.value.trim()) return;
+        try {
+            await addDoc(collection(db, "posts"), {
+                texto: inputMsg.value,
+                autor: auth.currentUser.displayName,
+                uid: auth.currentUser.uid,
+                data: serverTimestamp()
+            });
+            inputMsg.value = "";
+        } catch (error) {
+            console.error("Erro:", error);
+            alert("Erro ao postar. Verifique se o Firestore está em modo de TESTE e se você está logado.");
+        }
+    };
+
+    // Monitorar Login
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            loginView.classList.add('hidden');
+            appView.classList.remove('hidden');
+            userDisplay.innerText = `Olá, ${user.displayName}`;
+            carregarFeed();
+        } else {
+            loginView.classList.remove('hidden');
+            appView.classList.add('hidden');
+        }
+    });
+
+    // Ler Feed em Tempo Real
+    function carregarFeed() {
+        const q = query(collection(db, "posts"), orderBy("data", "desc"));
+        onSnapshot(q, (snapshot) => {
+            feed.innerHTML = "";
+            snapshot.forEach((doc) => {
+                const post = doc.data();
+                // Tratamento de data para não quebrar se for null (latência)
+                let dataFormatada = "Agora mesmo";
+                if(post.data) {
+                    dataFormatada = new Date(post.data.seconds * 1000).toLocaleString();
+                }
+
+                feed.innerHTML += `
+                    <div class="post">
+                        <div class="post-author">${post.autor}</div>
+                        <div class="post-text">${post.texto}</div>
+                        <div class="post-date">${dataFormatada}</div>
+                    </div>
+                `;
+            });
+        });
+    }
+</script>
+</body>
+</html>
